@@ -206,7 +206,7 @@ fn instructs(inst: &char, sys: &mut Vec<i64>) {
         ':' => {
             let first = sys.pop().unwrap_or(0);
             sys.push(first);
-            sys.push(first.clone());
+            sys.push(first);
         }
         '\\' => {
             let first = sys.pop().unwrap_or(0);
