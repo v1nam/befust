@@ -79,7 +79,7 @@ pub fn instructs(inst: &char, sys: &mut Vec<i64>) {
         '~' => {
             let mut string = String::new();
             io::stdin().read_line(&mut string).expect("Invalid input");
-            sys.push(string.trim().chars().next().unwrap() as i64);
+            sys.push(string.trim().chars().next().unwrap_or('\n') as i64);
         }
         _ => (),
     }
