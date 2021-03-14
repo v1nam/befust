@@ -155,6 +155,8 @@ fn main() {
         system.run();
         system.forward();
     }
+
+    println!("\n-------Program Completed-------");
 }
 
 fn direction(dir: &char) -> Option<fn(i32, i32) -> (i32, i32)> {
