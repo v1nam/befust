@@ -89,12 +89,12 @@ impl Program {
             '"' => {
                 self.strmode = true;
             }
+            '0'..='9' => {
+                self.stack
+                    .push(instruct.to_digit(10 as u32).unwrap() as i64);
+                return;
+            }
             _ => (),
-        }
-        if "0123456789".contains(instruct) {
-            self.stack
-                .push(instruct.to_digit(10 as u32).unwrap() as i64);
-            return;
         }
         if "<>v^".contains(instruct) {
             self.direction = direction(&instruct).unwrap();
