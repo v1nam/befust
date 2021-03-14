@@ -10,7 +10,7 @@ struct Program {
     width: i32,
     coords: (i32, i32),
     direction: fn(i32, i32) -> (i32, i32),
-    stack: Vec<usize>,
+    stack: Vec<i64>,
     active: bool,
     jump: bool,
     strmode: bool,
@@ -18,8 +18,16 @@ struct Program {
 
 impl Program {
     fn run(&mut self) {
-        let y = self.coords.1 % self.height;
-        let x = self.coords.0 % self.width;
+        let mut y = self.coords.1.rem_euclid(self.height);
+        let mut x = self.coords.0.rem_euclid(self.width);
+
+        if y < 0 {
+            y += self.height;
+        }
+        if x < 0 {
+            x += self.width;
+        }
+
         let mut instruct = self.prog[y as usize][x as usize];
 
         if self.strmode {
@@ -27,25 +35,24 @@ impl Program {
                 self.strmode = false;
                 return;
             }
-            self.stack.push(instruct as usize);
+            self.stack.push(instruct as i64);
             return;
         }
         if instruct == 'p' {
-            let a = self.stack.pop().unwrap();
-            let b = self.stack.pop().unwrap();
-            let v = self.stack.pop().unwrap();
-
-            self.prog[a][b] = std::char::from_u32(v as u32).unwrap();
+            y = self.stack.pop().unwrap_or(0) as i32;
+            x = self.stack.pop().unwrap_or(0) as i32;
+            let v = self.stack.pop().unwrap_or(0);
+            self.prog[y as usize][x as usize] = std::char::from_u32(v as u32).unwrap();
         }
 
         if instruct == 'g' {
-            let a = self.stack.pop().unwrap();
-            let b = self.stack.pop().unwrap();
+            y = self.stack.pop().unwrap_or(0) as i32;
+            x = self.stack.pop().unwrap_or(0) as i32;
 
-            if b > self.width as usize || a > self.height as usize {
+            if x > (self.width as i32) || x < 0 || y > (self.height as i32) || y < 0 {
                 self.stack.push(0);
             } else {
-                self.stack.push(self.prog[a][b] as usize);
+                self.stack.push(self.prog[y as usize][x as usize] as i64);
             }
         }
         if instruct == '@' {
@@ -84,7 +91,7 @@ impl Program {
         }
         if "0123456789".contains(instruct) {
             self.stack
-                .push(instruct.to_digit(10 as u32).unwrap() as usize);
+                .push(instruct.to_digit(10 as u32).unwrap() as i64);
             return;
         }
         if "<>v^".contains(instruct) {
@@ -118,7 +125,7 @@ fn main() {
     let s = fs::read_to_string(file).unwrap();
     let mut prog: Vec<Vec<char>> = s
         .lines()
-        .filter(|x| x != &"" || x != &"\n")
+        .filter(|x| x != &"\n")
         .map(|x| x.chars().collect::<Vec<char>>())
         .collect();
     let mut grid_width: i32 = -1;
@@ -160,7 +167,7 @@ fn direction(dir: &char) -> Option<fn(i32, i32) -> (i32, i32)> {
     }
 }
 
-fn instructs(inst: &char, sys: &mut Vec<usize>) {
+fn instructs(inst: &char, sys: &mut Vec<i64>) {
     match inst {
         '+' => {
             let first = sys.pop().unwrap_or(0);
@@ -189,23 +196,23 @@ fn instructs(inst: &char, sys: &mut Vec<usize>) {
         }
         '!' => {
             let first = sys.pop().unwrap_or(0);
-            sys.push((first == 0) as usize);
+            sys.push((first == 0) as i64);
         }
         '`' => {
             let first = sys.pop().unwrap_or(0);
             let second = sys.pop().unwrap_or(0);
-            sys.push((second > first) as usize);
+            sys.push((second > first) as i64);
         }
         ':' => {
             let first = sys.pop().unwrap_or(0);
             sys.push(first);
-            sys.push(first);
+            sys.push(first.clone());
         }
         '\\' => {
             let first = sys.pop().unwrap_or(0);
             let second = sys.pop().unwrap_or(0);
-            sys.push(second);
             sys.push(first);
+            sys.push(second);
         }
         '$' => match sys.pop() {
             Some(_x) => (),
@@ -223,13 +230,13 @@ fn instructs(inst: &char, sys: &mut Vec<usize>) {
         '&' => {
             let mut num = String::new();
             io::stdin().read_line(&mut num).expect("Invalid input");
-            let num: usize = num.parse().unwrap_or(0);
+            let num: i64 = num.trim().parse().unwrap_or(0);
             sys.push(num);
         }
         '~' => {
             let mut string = String::new();
             io::stdin().read_line(&mut string).expect("Invalid input");
-            sys.push(string.chars().next().unwrap() as usize);
+            sys.push(string.trim().chars().next().unwrap() as i64);
         }
         _ => (),
     }
